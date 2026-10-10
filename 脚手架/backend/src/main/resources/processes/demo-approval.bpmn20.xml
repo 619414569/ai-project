@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://aiproject.com/scaffold/processes">
+    <process id="demoApproval" name="Demo approval" isExecutable="true">
+        <startEvent id="start" name="Submitted"/>
+        <sequenceFlow id="flow-start-review" sourceRef="start" targetRef="review"/>
+        <userTask id="review" name="Review request" flowable:assignee="${approver}"/>
+        <sequenceFlow id="flow-review-end" sourceRef="review" targetRef="approved"/>
+        <endEvent id="approved" name="Approved"/>
+    </process>
+</definitions>
