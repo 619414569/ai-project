@@ -18,16 +18,16 @@ jobs:
         with:
           node-version: "22"
       - name: Validate error notebook
-        run: node 619414569文件夹-测试/check-error-notebook.mjs
+        run: node 619414569应用/测试/check-error-notebook.mjs
       - name: Enforce release error notebook gate
         if: startsWith(github.ref, 'refs/tags/v')
-        run: node 619414569文件夹-测试/check-error-notebook.mjs --release
+        run: node 619414569应用/测试/check-error-notebook.mjs --release
 
   backend:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: 619414569文件夹-应用/backend
+        working-directory: 619414569应用/backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: 619414569文件夹-应用/frontend
+        working-directory: 619414569应用/frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,6 +61,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build backend image
-        run: docker build -t ai-scaffold-backend:ci ./619414569文件夹-应用/backend
+        run: docker build -t ai-scaffold-backend:ci ./619414569应用/backend
       - name: Build frontend image
-        run: docker build -t ai-scaffold-frontend:ci ./619414569文件夹-应用/frontend
+        run: docker build -t ai-scaffold-frontend:ci ./619414569应用/frontend

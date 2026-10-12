@@ -8,7 +8,7 @@ body:
     attributes:
       label: 错题本检查
       options:
-        - label: 我已检索 `619414569文件夹-测试/错题本`，确认不是已有问题的重复提报；如为复发，将更新原记录。
+        - label: 我已检索 `619414569应用/测试/错题本`，确认不是已有问题的重复提报；如为复发，将更新原记录。
           required: true
   - type: textarea
     id: steps
