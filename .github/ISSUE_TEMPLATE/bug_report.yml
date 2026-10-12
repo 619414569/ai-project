@@ -1,0 +1,32 @@
+name: Bug 提报
+description: 提报可复现的产品或工程问题
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: checkboxes
+    id: notebook
+    attributes:
+      label: 错题本检查
+      options:
+        - label: 我已检索 `619414569文件夹-测试/错题本`，确认不是已有问题的重复提报；如为复发，将更新原记录。
+          required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 写明页面、账号角色、输入、操作顺序和发生频率。
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: 原始报错
+      description: 保留状态码、错误消息、请求 ID、关键日志和发生时间。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+    validations:
+      required: true
