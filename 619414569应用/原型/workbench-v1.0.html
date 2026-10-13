@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 工作台 v1.0 原型</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      color: #17211b;
+      background: #f4f6f5;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: #f4f6f5; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+      outline: 3px solid rgba(20, 107, 68, .2);
+      outline-offset: 2px;
+    }
+    .hidden { display: none !important; }
+    .login-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .login-panel { width: min(420px, 100%); background: #fff; border: 1px solid #dce3df; border-radius: 8px; padding: 32px; box-shadow: 0 14px 40px rgba(20, 36, 27, .08); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 7px; background: #146b44; color: #fff; font-weight: 700; }
+    .brand-title { margin: 0; font-size: 20px; font-weight: 600; }
+    .brand-subtitle { margin: 3px 0 0; color: #66736b; font-size: 13px; }
+    .login-heading { margin: 28px 0 6px; font-size: 24px; }
+    .login-copy { margin: 0 0 22px; color: #66736b; }
+    .field { display: grid; gap: 7px; margin-bottom: 16px; }
+    .field label { color: #3b4941; font-size: 14px; font-weight: 600; }
+    .field input, .field select { width: 100%; height: 42px; border: 1px solid #cdd7d1; border-radius: 6px; padding: 0 12px; color: #17211b; background: #fff; }
+    .field small { color: #748078; }
+    .primary, .secondary, .ghost, .danger { min-height: 36px; border-radius: 6px; border: 1px solid transparent; padding: 0 14px; font-weight: 600; }
+    .primary { background: #146b44; color: #fff; }
+    .primary:hover { background: #0f5938; }
+    .secondary { background: #fff; color: #243229; border-color: #cbd5cf; }
+    .ghost { background: transparent; color: #405047; }
+    .danger { background: #fff; color: #a52d2d; border-color: #e2b8b8; }
+    .block { width: 100%; }
+    .form-error { min-height: 20px; margin: -6px 0 10px; color: #b42318; font-size: 13px; }
+    .app-shell { min-height: 100vh; }
+    .topbar { position: sticky; top: 0; z-index: 10; height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; background: #fff; border-bottom: 1px solid #dce3df; }
+    .topbar > .brand { min-width: 0; }
+    .topbar-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+    .user-name { margin-right: 6px; color: #3c4a42; font-weight: 600; }
+    .anchor-nav { position: sticky; top: 64px; z-index: 9; display: flex; gap: 6px; overflow-x: auto; padding: 10px 28px; background: rgba(244, 246, 245, .96); border-bottom: 1px solid #e1e6e3; }
+    .anchor-nav a { flex: 0 0 auto; color: #405047; text-decoration: none; padding: 7px 10px; border-radius: 5px; font-size: 14px; }
+    .anchor-nav a:hover { background: #e7eee9; color: #0f5938; }
+    main { width: min(1240px, calc(100% - 48px)); margin: 0 auto; padding: 26px 0 64px; }
+    .workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .workspace-heading h1 { margin: 0; font-size: 28px; }
+    .workspace-heading p { margin: 7px 0 0; color: #66736b; }
+    .section { scroll-margin-top: 122px; padding: 26px 0; border-top: 1px solid #dce3df; }
+    .section:first-of-type { border-top: 0; }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+    .section-heading h2 { margin: 0; font-size: 20px; }
+    .section-heading p { margin: 4px 0 0; color: #6e7a73; font-size: 13px; }
+    .app-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .app-card { min-width: 0; background: #fff; border: 1px solid #dce3df; border-radius: 7px; padding: 16px; }
+    .app-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .app-card h3 { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+    .app-card p { min-height: 40px; margin: 10px 0; color: #657169; font-size: 13px; line-height: 1.55; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag { display: inline-flex; align-items: center; min-height: 24px; border-radius: 999px; padding: 2px 8px; background: #eef2ef; color: #4b5951; font-size: 12px; }
+    .tag.running { background: #e7f4ec; color: #17633f; }
+    .tag.paused { background: #fff1dc; color: #8b4f00; }
+    .card-meta { margin-top: 12px; color: #6b766f; font-size: 12px; }
+    .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 13px; border-top: 1px solid #edf0ee; }
+    .card-actions button { min-height: 32px; padding: 0 10px; font-size: 13px; }
+    .owner-group + .owner-group { margin-top: 24px; }
+    .owner-title { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; color: #344239; font-size: 15px; }
+    .avatar { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #263d32; color: #fff; font-size: 12px; }
+    .log-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 14px; }
+    .log-toolbar .field { width: min(240px, 100%); margin: 0; }
+    .table-wrap { overflow-x: auto; background: #fff; border: 1px solid #dce3df; border-radius: 7px; }
+    table { width: 100%; min-width: 700px; border-collapse: collapse; }
+    th, td { padding: 13px 15px; border-bottom: 1px solid #edf0ee; text-align: left; font-size: 13px; }
+    th { color: #536058; background: #f8faf9; font-weight: 600; }
+    tbody tr:last-child td { border-bottom: 0; }
+    code { color: #43534a; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 20px; background: rgba(13, 25, 18, .46); }
+    .dialog { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; background: #fff; border-radius: 8px; border: 1px solid #dce3df; padding: 24px; box-shadow: 0 20px 60px rgba(13, 25, 18, .22); }
+    .dialog h2 { margin: 0 0 6px; font-size: 20px; }
+    .dialog > p { margin: 0 0 20px; color: #68746d; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+    .checkbox-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .checkbox-item { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 7px 10px; border: 1px solid #dce3df; border-radius: 6px; }
+    .toast { position: fixed; right: 22px; bottom: 22px; z-index: 50; max-width: min(360px, calc(100% - 44px)); padding: 12px 15px; border-radius: 6px; background: #263d32; color: #fff; box-shadow: 0 12px 34px rgba(13, 25, 18, .22); }
+    @media (max-width: 900px) { .app-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 620px) {
+      .topbar { height: auto; min-height: 62px; padding: 10px 16px; }
+      .topbar .brand-subtitle, .user-name { display: none; }
+      .topbar .brand { gap: 9px; }
+      .topbar .brand-mark { width: 36px; height: 36px; }
+      .topbar .brand-title { font-size: 18px; white-space: nowrap; }
+      .topbar-actions .secondary { padding-inline: 10px; white-space: nowrap; }
+      .anchor-nav { top: 62px; padding-inline: 16px; }
+      main { width: min(100% - 28px, 1240px); padding-top: 20px; }
+      .workspace-heading, .section-heading { align-items: flex-start; flex-direction: column; }
+      .app-grid { grid-template-columns: 1fr; }
+      .checkbox-list { grid-template-columns: 1fr; }
+      .dialog-actions { flex-direction: column-reverse; }
+      .dialog-actions button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <section id="login-view" class="login-shell">
+    <form id="login-form" class="login-panel">
+      <div class="brand"><span class="brand-mark">AI</span><div><p class="brand-title">AI 工作台</p><p class="brand-subtitle">统一应用协作入口</p></div></div>
+      <h1 class="login-heading">账号登录</h1>
+      <p class="login-copy">进入个人与团队应用工作区</p>
+      <div class="field"><label for="username">用户名</label><input id="username" name="username" value="chyong" autocomplete="username" required></div>
+      <div class="field"><label for="password">密码</label><input id="password" name="password" type="password" value="admin123" autocomplete="current-password" required></div>
+      <p id="login-error" class="form-error" role="alert"></p>
+      <button class="primary block" type="submit">登录</button>
+    </form>
+  </section>
+
+  <div id="workspace-view" class="app-shell hidden">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">AI</span><div><p class="brand-title">AI 工作台</p><p class="brand-subtitle">应用与协作中心</p></div></div>
+      <div class="topbar-actions"><span class="user-name">chyong</span><button id="logout-button" class="secondary" type="button">退出登录</button></div>
+    </header>
+    <nav class="anchor-nav" aria-label="工作台区域">
+      <a href="#my-applications">我的应用</a><a href="#other-applications">其他用户</a><a href="#collaboration-applications">合作应用</a><a href="#submission-logs">提交日志</a>
+    </nav>
+    <main>
+      <div class="workspace-heading"><div><h1>你好，chyong</h1><p>今天继续推进你的应用和团队协作。</p></div><button class="primary create-button" data-type="personal" type="button">＋ 创建应用</button></div>
+
+      <section id="my-applications" class="section">
+        <div class="section-heading"><div><h2>我的个人应用</h2><p>仅你拥有管理权限，可选择共享或独享。</p></div><button class="secondary create-button" data-type="personal" type="button">＋ 新建个人应用</button></div>
+        <div id="personal-grid" class="app-grid"></div>
+      </section>
+
+      <section id="other-applications" class="section">
+        <div class="section-heading"><div><h2>其他用户的个人应用</h2><p>按照创建人分组展示已共享应用。</p></div></div>
+        <div id="other-groups"></div>
+      </section>
+
+      <section id="collaboration-applications" class="section">
+        <div class="section-heading"><div><h2>合作应用</h2><p>创建人与合作成员共同参与，创建人负责管理。</p></div><button class="secondary create-button" data-type="collaboration" type="button">＋ 新建合作应用</button></div>
+        <div id="collaboration-grid" class="app-grid"></div>
+      </section>
+
+      <section id="submission-logs" class="section">
+        <div class="section-heading"><div><h2>提交日志</h2><p>查看每位成员的版本提交记录。</p></div></div>
+        <div class="log-toolbar"><div class="field"><label for="log-user">提交人</label><select id="log-user"><option value="all">全部用户</option><option value="chyong">chyong</option><option value="liyan">liyan</option><option value="zhangwei">zhangwei</option></select></div></div>
+        <div class="table-wrap"><table><thead><tr><th>提交时间</th><th>提交人</th><th>提交</th><th>简述</th></tr></thead><tbody id="log-body"></tbody></table></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="password-modal" class="modal-backdrop hidden">
+    <form id="password-form" class="dialog" role="dialog" aria-modal="true" aria-labelledby="password-title">
+      <h2 id="password-title">首次登录修改密码</h2><p>当前账号仍在使用默认密码，请完成修改后进入工作台。</p>
+      <div class="field"><label for="new-password">新密码</label><input id="new-password" type="password" minlength="8" required></div>
+      <div class="field"><label for="confirm-password">确认新密码</label><input id="confirm-password" type="password" minlength="8" required></div>
+      <p id="password-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button class="primary" type="submit">确认修改</button></div>
+    </form>
+  </div>
+
+  <div id="create-modal" class="modal-backdrop hidden">
+    <form id="create-form" class="dialog" role="dialog" aria-modal="true" aria-labelledby="create-title">
+      <h2 id="create-title">创建应用</h2><p>填写应用信息后加入当前工作台。</p>
+      <input id="application-type" type="hidden" value="personal">
+      <div class="field"><label for="application-name">应用名称</label><input id="application-name" maxlength="30" required></div>
+      <div class="field"><label for="application-description">应用简介</label><input id="application-description" maxlength="80" required></div>
+      <div class="field"><label for="application-url">应用地址（选填）</label><input id="application-url" type="url" placeholder="https://example.com"><small>未填写时，打开应用会提示补填地址。</small></div>
+      <div class="field"><label for="application-visibility">访问方式</label><select id="application-visibility"><option value="独享">独享</option><option value="共享">共享</option></select></div>
+      <div id="collaborator-field" class="field hidden"><label>合作人</label><div class="checkbox-list"><label class="checkbox-item"><input type="checkbox" name="collaborator" value="liyan">liyan</label><label class="checkbox-item"><input type="checkbox" name="collaborator" value="zhangwei">zhangwei</label><label class="checkbox-item"><input type="checkbox" name="collaborator" value="wangqi">wangqi</label></div></div>
+      <p id="create-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button id="cancel-create" class="secondary" type="button">取消</button><button class="primary" type="submit">创建</button></div>
+    </form>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script>
+    const personalApps = [
+      { id: 1, name: "需求分析助手", description: "整理需求材料并生成结构化分析结果。", status: "运行中", visibility: "独享", url: "" },
+      { id: 2, name: "周报生成器", description: "汇总项目动态并生成团队周报。", status: "运行中", visibility: "共享", url: "https://example.com" },
+      { id: 3, name: "文档质检", description: "检查文档格式、术语和关键信息完整性。", status: "已暂停", visibility: "独享", url: "" }
+    ];
+    const collaborationApps = [
+      { id: 11, name: "培训知识库", description: "沉淀培训资料并提供团队问答。", status: "运行中", visibility: "共享", url: "", collaborators: ["liyan", "zhangwei"] },
+      { id: 12, name: "流程审批助手", description: "跟踪审批流程与待办状态。", status: "运行中", visibility: "独享", url: "https://example.com", collaborators: ["wangqi"] }
+    ];
+    const otherUsers = [
+      { owner: "liyan", apps: [{ name: "数据口径助手", description: "统一指标口径并提供快速查询。", status: "运行中" }, { name: "会议纪要", description: "提取会议决议与行动项。", status: "运行中" }] },
+      { owner: "zhangwei", apps: [{ name: "代码评审助手", description: "汇总评审发现并生成改进建议。", status: "已暂停" }] }
+    ];
+    const logs = [
+      { time: "2026-10-12 16:41", user: "chyong", commit: "04b71c9", summary: "重整应用目录并恢复脚手架" },
+      { time: "2026-10-12 15:25", user: "chyong", commit: "419e11e", summary: "发布工作台脚手架 v1.0" },
+      { time: "2026-10-11 17:36", user: "liyan", commit: "e8105ad", summary: "补充知识库应用说明" },
+      { time: "2026-10-10 16:08", user: "zhangwei", commit: "8d4b117", summary: "更新流程审批原型" }
+    ];
+
+    const loginView = document.getElementById("login-view");
+    const workspaceView = document.getElementById("workspace-view");
+    const passwordModal = document.getElementById("password-modal");
+    const createModal = document.getElementById("create-modal");
+    const toast = document.getElementById("toast");
+    let toastTimer;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.remove("hidden");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.add("hidden"), 2600);
+    }
+
+    function appCard(app, type) {
+      const collaborators = app.collaborators ? `<div class="card-meta">合作人：${app.collaborators.join("、")}</div>` : "";
+      return `<article class="app-card" data-id="${app.id}" data-type="${type}">
+        <div class="app-card-top"><h3>${app.name}</h3><span class="tag ${app.status === "运行中" ? "running" : "paused"}">${app.status}</span></div>
+        <p>${app.description}</p><div class="tags"><span class="tag">${app.visibility}</span>${app.url ? '<span class="tag">已配置地址</span>' : '<span class="tag">暂无地址</span>'}</div>${collaborators}
+        <div class="card-actions"><button class="primary" data-action="open" type="button">打开</button><button class="secondary" data-action="visibility" type="button">${app.visibility === "共享" ? "设为独享" : "设为共享"}</button><button class="secondary" data-action="status" type="button">${app.status === "运行中" ? "暂停" : "恢复"}</button><button class="ghost" data-action="url" type="button">补填地址</button><button class="danger" data-action="delete" type="button">删除</button></div>
+      </article>`;
+    }
+
+    function renderApps() {
+      document.getElementById("personal-grid").innerHTML = personalApps.map(app => appCard(app, "personal")).join("");
+      document.getElementById("collaboration-grid").innerHTML = collaborationApps.map(app => appCard(app, "collaboration")).join("");
+      document.getElementById("other-groups").innerHTML = otherUsers.map(group => `<div class="owner-group"><h3 class="owner-title"><span class="avatar">${group.owner.slice(0, 2).toUpperCase()}</span>${group.owner}</h3><div class="app-grid">${group.apps.map((app, index) => `<article class="app-card"><div class="app-card-top"><h3>${app.name}</h3><span class="tag ${app.status === "运行中" ? "running" : "paused"}">${app.status}</span></div><p>${app.description}</p><div class="tags"><span class="tag">共享</span><span class="tag">创建人：${group.owner}</span></div><div class="card-actions"><button class="primary" type="button" data-shared-index="${index}" data-owner="${group.owner}">打开</button></div></article>`).join("")}</div></div>`).join("");
+    }
+
+    function renderLogs(user = "all") {
+      const filtered = user === "all" ? logs : logs.filter(log => log.user === user);
+      document.getElementById("log-body").innerHTML = filtered.map(log => `<tr><td>${log.time}</td><td>${log.user}</td><td><code>${log.commit}</code></td><td>${log.summary}</td></tr>`).join("");
+    }
+
+    document.getElementById("login-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      if (username !== "chyong" || password !== "admin123") {
+        document.getElementById("login-error").textContent = "账号或密码错误";
+        return;
+      }
+      document.getElementById("login-error").textContent = "";
+      loginView.classList.add("hidden");
+      workspaceView.classList.remove("hidden");
+      passwordModal.classList.remove("hidden");
+      document.getElementById("new-password").focus();
+    });
+
+    document.getElementById("password-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const next = document.getElementById("new-password").value;
+      const confirm = document.getElementById("confirm-password").value;
+      const error = document.getElementById("password-error");
+      if (next.length < 8) { error.textContent = "新密码至少 8 位"; return; }
+      if (next === "admin123") { error.textContent = "新密码不能与默认密码相同"; return; }
+      if (next !== confirm) { error.textContent = "两次输入的密码不一致"; return; }
+      error.textContent = "";
+      passwordModal.classList.add("hidden");
+      showToast("密码修改成功");
+    });
+
+    document.getElementById("logout-button").addEventListener("click", () => {
+      workspaceView.classList.add("hidden");
+      loginView.classList.remove("hidden");
+      document.getElementById("password").value = "admin123";
+      showToast("已退出登录");
+    });
+
+    document.querySelectorAll(".create-button").forEach(button => button.addEventListener("click", () => {
+      const type = button.dataset.type;
+      document.getElementById("application-type").value = type;
+      document.getElementById("create-title").textContent = type === "collaboration" ? "创建合作应用" : "创建个人应用";
+      document.getElementById("collaborator-field").classList.toggle("hidden", type !== "collaboration");
+      document.getElementById("create-error").textContent = "";
+      createModal.classList.remove("hidden");
+      document.getElementById("application-name").focus();
+    }));
+
+    document.getElementById("cancel-create").addEventListener("click", () => createModal.classList.add("hidden"));
+    document.getElementById("create-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const type = document.getElementById("application-type").value;
+      const collaborators = [...document.querySelectorAll('input[name="collaborator"]:checked')].map(input => input.value);
+      if (type === "collaboration" && collaborators.length === 0) {
+        document.getElementById("create-error").textContent = "请至少选择一名合作人";
+        return;
+      }
+      const app = {
+        id: Date.now(),
+        name: document.getElementById("application-name").value.trim(),
+        description: document.getElementById("application-description").value.trim(),
+        url: document.getElementById("application-url").value.trim(),
+        visibility: document.getElementById("application-visibility").value,
+        status: "运行中",
+        collaborators
+      };
+      (type === "collaboration" ? collaborationApps : personalApps).unshift(app);
+      renderApps();
+      event.currentTarget.reset();
+      createModal.classList.add("hidden");
+      showToast("应用创建成功");
+    });
+
+    function handleCardAction(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const card = button.closest(".app-card");
+      const collection = card.dataset.type === "personal" ? personalApps : collaborationApps;
+      const index = collection.findIndex(app => String(app.id) === card.dataset.id);
+      if (index < 0) return;
+      const app = collection[index];
+      if (button.dataset.action === "open") {
+        if (!app.url) { showToast("暂无地址，请补填"); return; }
+        window.open(app.url, "_blank", "noopener,noreferrer");
+      }
+      if (button.dataset.action === "visibility") { app.visibility = app.visibility === "共享" ? "独享" : "共享"; renderApps(); showToast("访问方式已更新"); }
+      if (button.dataset.action === "status") { app.status = app.status === "运行中" ? "已暂停" : "运行中"; renderApps(); showToast(app.status === "运行中" ? "应用已恢复" : "应用已暂停"); }
+      if (button.dataset.action === "url") {
+        const value = window.prompt("请输入应用地址", app.url || "https://");
+        if (value !== null) { app.url = value.trim(); renderApps(); showToast(app.url ? "应用地址已更新" : "应用地址已清空"); }
+      }
+      if (button.dataset.action === "delete" && window.confirm(`确认删除“${app.name}”吗？`)) { collection.splice(index, 1); renderApps(); showToast("应用已删除"); }
+    }
+    document.getElementById("personal-grid").addEventListener("click", handleCardAction);
+    document.getElementById("collaboration-grid").addEventListener("click", handleCardAction);
+    document.getElementById("other-groups").addEventListener("click", event => { if (event.target.closest("button[data-shared-index]")) showToast("暂无地址，请联系创建人补填"); });
+    document.getElementById("log-user").addEventListener("change", event => renderLogs(event.target.value));
+
+    renderApps();
+    renderLogs();
+    if (new URLSearchParams(window.location.search).get("preview") === "workspace") {
+      loginView.classList.add("hidden");
+      workspaceView.classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
