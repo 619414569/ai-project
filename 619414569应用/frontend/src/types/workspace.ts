@@ -35,3 +35,18 @@ export interface SubmissionLog {
   summary: string
   area: string
 }
+
+export type UpdateReleaseType = 'major' | 'minor'
+
+export interface UpdateLogSummary {
+  author: string
+  fileName: string
+  version: string
+  releaseType: UpdateReleaseType
+  releasedAt: string
+  summary: string
+}
+
+export interface UpdateLogDocument extends UpdateLogSummary {
+  markdown: string
+}

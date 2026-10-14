@@ -859,6 +859,22 @@ p {
   width: 190px;
 }
 
+.log-tabs .el-tabs__header {
+  margin-bottom: 20px;
+}
+
+.log-tabs .el-tabs__content {
+  overflow: visible;
+}
+
+.log-tabs .log-toolbar {
+  margin-bottom: 16px;
+}
+
+.update-log-error {
+  margin-bottom: 16px;
+}
+
 .submission-table-wrap {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -883,6 +899,83 @@ p {
 
 .submission-table .cell {
   line-height: 1.55;
+}
+
+.update-log-table .el-button {
+  max-width: 100%;
+}
+
+.update-log-table .el-button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.update-log-preview-wrap {
+  min-height: 240px;
+}
+
+.update-log-preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.markdown-preview {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+  margin: 24px 0 10px;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.markdown-preview h1 {
+  font-size: 26px;
+}
+
+.markdown-preview h2 {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 20px;
+}
+
+.markdown-preview h3 {
+  font-size: 16px;
+}
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol {
+  margin: 10px 0;
+}
+
+.markdown-preview pre {
+  overflow-x: auto;
+  padding: 14px;
+  border-radius: 6px;
+  color: #eef4f1;
+  background: #20282d;
+}
+
+.markdown-preview :not(pre) > code {
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: #11634d;
+  background: #edf7f3;
+}
+
+.markdown-preview a {
+  color: var(--accent);
 }
 
 .log-user {
@@ -1099,18 +1192,6 @@ p {
 .login-submit {
   width: 100%;
   margin-top: 8px;
-}
-
-.login-default-password {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
-}
-
-.login-default-password code {
-  color: var(--ink);
-  font-family: "Cascadia Code", Consolas, monospace;
 }
 
 .password-reminder {
@@ -1404,6 +1485,16 @@ p {
 
   .submission-table {
     min-width: 920px;
+  }
+
+  .update-log-table {
+    min-width: 1040px;
+  }
+
+  .update-log-preview-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .status-band {

@@ -103,7 +103,7 @@ async function submit() {
   >
     <el-alert
       v-if="required"
-      title="当前账号仍在使用默认密码 admin123，为保障账号安全，请尽快修改。"
+      title="当前账号需要修改初始密码，为保障账号安全，请设置新密码。"
       type="warning"
       :closable="false"
       show-icon

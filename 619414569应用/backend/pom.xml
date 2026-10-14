@@ -13,7 +13,7 @@
 
     <groupId>com.aiproject</groupId>
     <artifactId>ai-scaffold-backend</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>ai-scaffold-backend</name>
     <description>Reusable Spring Boot foundation for the AI project team</description>
 

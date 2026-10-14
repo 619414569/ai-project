@@ -1,5 +1,11 @@
 import { request } from '@/api/http'
-import type { CreateApplicationInput, SubmissionLog, WorkspaceApplication } from '@/types/workspace'
+import type {
+  CreateApplicationInput,
+  SubmissionLog,
+  UpdateLogDocument,
+  UpdateLogSummary,
+  WorkspaceApplication,
+} from '@/types/workspace'
 
 type CreateApplicationRequest = Omit<CreateApplicationInput, 'owner'>
 
@@ -21,5 +27,16 @@ export const workspaceApi = {
   },
   listSubmissionLogs() {
     return request<SubmissionLog[]>({ method: 'GET', url: '/v1/workspace/submission-logs' })
+  },
+  listUpdateLogs() {
+    return request<UpdateLogSummary[]>({ method: 'GET', url: '/v1/workspace/update-logs' })
+  },
+  readUpdateLog(author: string, fileName: string) {
+    const encodedAuthor = encodeURIComponent(author)
+    const encodedFileName = encodeURIComponent(fileName)
+    return request<UpdateLogDocument>({
+      method: 'GET',
+      url: `/v1/workspace/update-logs/${encodedAuthor}/${encodedFileName}`,
+    })
   },
 }

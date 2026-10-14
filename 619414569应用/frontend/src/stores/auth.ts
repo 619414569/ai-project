@@ -4,8 +4,6 @@ import { authApi } from '@/api/modules/auth'
 import { TOKEN_KEY } from '@/api/http'
 import type { ChangePasswordRequest, LoginRequest, UserProfile } from '@/types/api'
 
-export const DEFAULT_PASSWORD = 'admin123'
-
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem(TOKEN_KEY) ?? '')
   const profile = ref<UserProfile | null>(null)

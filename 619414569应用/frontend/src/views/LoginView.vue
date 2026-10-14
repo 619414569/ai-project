@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Connection, Document, Grid, Lock, User } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { DEFAULT_PASSWORD, useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth'
 
 interface LoginForm {
   username: string
@@ -12,7 +12,7 @@ interface LoginForm {
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
-const form = reactive<LoginForm>({ username: 'admin', password: DEFAULT_PASSWORD })
+const form = reactive<LoginForm>({ username: '', password: '' })
 const rules: FormRules<LoginForm> = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
@@ -75,7 +75,6 @@ async function submit() {
           <el-button type="primary" :loading="submitting" class="login-submit" @click="submit">
             登录
           </el-button>
-          <p class="login-default-password">默认密码：<code>admin123</code>，首次登录后请修改</p>
         </el-form>
       </div>
     </section>

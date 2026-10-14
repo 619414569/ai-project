@@ -1,4 +1,4 @@
-.PHONY: deploy up down logs ps build backend-test frontend-build
+.PHONY: deploy up down logs ps build backend-test frontend-build update-log-check
 
 deploy:
 	sh scripts/deploy.sh
@@ -23,3 +23,6 @@ backend-test:
 
 frontend-build:
 	cd frontend && npm ci && npm run build
+
+update-log-check:
+	node scripts/check-update-logs.mjs

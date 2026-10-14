@@ -1,4 +1,4 @@
-# AI Project 通用研发脚手架 v1.0
+# AI Project 通用研发脚手架 v1.1
 
 本项目是小组内研发 AI 功能的通用前后端分离底座。它提供一致的工程结构、安全基线、中间件接入方式和容器交付方式，业务模块可以在此基础上独立演进。
 
@@ -119,8 +119,8 @@ Windows 下从中文目录运行可执行 JAR 时必须保留 UTF-8 参数，避
 后端镜像：
 
 ```bash
-docker build -t ai-scaffold-backend:1.0.0 ./backend
-docker run --rm --add-host=host.docker.internal:host-gateway -p 8080:8080 --env-file .env ai-scaffold-backend:1.0.0
+docker build -t ai-scaffold-backend:1.1.0 ./backend
+docker run --rm --add-host=host.docker.internal:host-gateway -p 8080:8080 --env-file .env -v "$(pwd)/提交日志:/app/update-logs:ro" ai-scaffold-backend:1.1.0
 ```
 
 单独运行后端容器时，`.env` 中的 `DB_URL`、`REDIS_HOST` 和 `ROCKETMQ_NAME_SERVER` 应指向容器可访问的地址。Linux Docker 20.10+ 通过 `--add-host=host.docker.internal:host-gateway` 提供统一的宿主机入口；若中间件位于其他服务器，应直接填写其内网地址。
@@ -136,8 +136,8 @@ npm run build
 前端镜像内置 Nginx，运行时用 `BACKEND_URL` 指定后端：
 
 ```bash
-docker build -t ai-scaffold-frontend:1.0.0 ./frontend
-docker run --rm --add-host=host.docker.internal:host-gateway -p 80:80 -e BACKEND_URL=http://host.docker.internal:8080 ai-scaffold-frontend:1.0.0
+docker build -t ai-scaffold-frontend:1.1.0 ./frontend
+docker run --rm --add-host=host.docker.internal:host-gateway -p 80:80 -e BACKEND_URL=http://host.docker.internal:8080 ai-scaffold-frontend:1.1.0
 ```
 
 因此，前端和后端可以分别构建、打版本、部署和扩容；根目录 Compose 只是本地与集成环境的便捷编排。
@@ -184,6 +184,8 @@ DB_PASSWORD=replace-with-secret
 | `GET/POST` | `/api/v1/workspace/applications` | 查询或创建工作台应用 |
 | `PATCH/DELETE` | `/api/v1/workspace/applications/{id}` | 更新或删除应用 |
 | `GET` | `/api/v1/workspace/submission-logs` | 查询提交日志 |
+| `GET` | `/api/v1/workspace/update-logs` | 按文件名倒序查询版本更新日志 |
+| `GET` | `/api/v1/workspace/update-logs/{author}/{fileName}` | 在线读取指定 Markdown 更新日志 |
 | `GET` | `/api/v1/public/ping` | 公共连通性检查 |
 | `PUT/GET/DELETE` | `/api/v1/demo/cache/{key}` | Redis 缓存示例 |
 | `POST` | `/api/v1/demo/messages` | RocketMQ 发布示例 |
@@ -210,7 +212,8 @@ DB_PASSWORD=replace-with-secret
 - 个人应用创建、共享/独享、暂停/恢复、地址配置和删除。
 - 按创建人查看其他成员已共享的个人应用。
 - 合作应用创建、合作人选择、共享/独享、暂停/恢复、地址配置和删除。
-- 按用户查询和筛选提交日志。
+- 按用户查询和筛选代码提交记录。
+- 按人员查询版本更新日志，点击 Markdown 文件名可在线预览。
 - 应用和权限数据存储于 PolarDB-PG/PostgreSQL，浏览器只保存 JWT。
 
 详细测试步骤和执行结果见 [`测试/工作台功能测试.md`](测试/工作台功能测试.md)。原型和基础数据分别归档于本目录下的 `原型`、`数据` 目录。
@@ -233,6 +236,8 @@ DB_PASSWORD=replace-with-secret
 ├── 原型/                     # 页面结构与交互原型
 ├── 测试/                     # 测试用例、执行记录与错题本
 ├── 数据/                     # 初始化数据口径
+├── 提交日志/                 # 按人员归档的版本更新 Markdown 与索引
+├── scripts/check-update-logs.mjs # 版本递增、倒序与文件完整性校验
 ├── docker-compose.yml
 └── .env.example
 ```

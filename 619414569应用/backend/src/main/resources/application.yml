@@ -47,7 +47,7 @@ management:
 info:
   app:
     name: ${spring.application.name}
-    version: 1.0.0
+    version: 1.1.0
 
 flowable:
   database-schema-update: true
@@ -70,6 +70,8 @@ springdoc:
     operations-sorter: method
 
 app:
+  update-logs:
+    directory: ${APP_UPDATE_LOG_DIRECTORY:../提交日志}
   demo-data:
     enabled: ${APP_DEMO_DATA_ENABLED:true}
   cors:
