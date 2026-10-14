@@ -4,12 +4,16 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    # CentOS 7's 3.10 kernel rejects syscalls used by current PostgreSQL
+    # images under Docker's default seccomp profile.
+    security_opt:
+      - seccomp=unconfined
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-ai_scaffold}
       POSTGRES_USER: ${POSTGRES_USER:-ai_scaffold}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,7 +31,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-change-me-redis}
     command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:${REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -45,11 +49,37 @@ services:
       JAVA_OPT_EXT: -server -Xms256m -Xmx256m -Xmn128m
     command: sh mqnamesrv
     ports:
-      - "${ROCKETMQ_NAMESRV_PORT:-9876}:9876"
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:-9876}:9876"
     volumes:
       - rocketmq_namesrv_logs:/home/rocketmq/logs
+    depends_on:
+      rocketmq-volume-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin getNamesrvConfig -n localhost:9876 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     networks:
       - ai-network
+
+  rocketmq-volume-init:
+    image: apache/rocketmq:5.3.1
+    user: root
+    restart: "no"
+    command:
+      - sh
+      - -c
+      - >-
+        chown -R rocketmq:rocketmq
+        /volumes/namesrv-logs
+        /volumes/broker-logs
+        /volumes/broker-store
+    volumes:
+      - rocketmq_namesrv_logs:/volumes/namesrv-logs
+      - rocketmq_broker_logs:/volumes/broker-logs
+      - rocketmq_broker_store:/volumes/broker-store
 
   rocketmq-broker:
     image: apache/rocketmq:5.3.1
@@ -59,43 +89,50 @@ services:
     command: sh mqbroker -c /home/rocketmq/conf/broker.conf
     depends_on:
       rocketmq-namesrv:
-        condition: service_started
+        condition: service_healthy
     ports:
-      - "${ROCKETMQ_BROKER_PORT:-10911}:10911"
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:${ROCKETMQ_BROKER_PORT:-10911}:10911"
     volumes:
       - ./docker/rocketmq/broker.conf:/home/rocketmq/conf/broker.conf:ro
       - rocketmq_broker_logs:/home/rocketmq/logs
       - rocketmq_broker_store:/home/rocketmq/store
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin clusterList -n rocketmq-namesrv:9876 | grep -q broker-a"]
+      interval: 10s
+      timeout: 8s
+      retries: 20
+      start_period: 30s
     networks:
       - ai-network
 
   backend:
     build:
       context: ./backend
-    image: ai-scaffold-backend:local
+    image: ai-scaffold-backend:${APP_VERSION:-1.0.0}
     restart: unless-stopped
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ai_scaffold}
-      DB_USERNAME: ${POSTGRES_USER:-ai_scaffold}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/ai_scaffold}
+      DB_USERNAME: ${DB_USERNAME:-ai_scaffold}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me-postgres}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-change-me-redis}
-      ROCKETMQ_NAME_SERVER: rocketmq-namesrv:9876
+      ROCKETMQ_NAME_SERVER: ${ROCKETMQ_NAME_SERVER:-rocketmq-namesrv:9876}
       JWT_SECRET: ${JWT_SECRET:-replace-this-development-secret-with-a-random-64-character-value}
       JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL:-PT2H}
       DEMO_ADMIN_USERNAME: ${DEMO_ADMIN_USERNAME:-admin}
       DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-admin123}
+      APP_DEMO_DATA_ENABLED: ${APP_DEMO_DATA_ENABLED:-true}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:[*],http://127.0.0.1,http://127.0.0.1:[*]}
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       rocketmq-broker:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/actuator/health/readiness | grep -q '\"status\":\"UP\"'"]
       interval: 10s
@@ -110,17 +147,17 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE_URL: /api
-    image: ai-scaffold-frontend:local
+    image: ai-scaffold-frontend:${APP_VERSION:-1.0.0}
     restart: unless-stopped
     environment:
-      BACKEND_URL: http://backend:8080
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8080}
     ports:
-      - "${WEB_PORT:-80}:80"
+      - "${WEB_BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-80}:80"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost/healthz | grep -q ok"]
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/healthz | grep -q ok"]
       interval: 10s
       timeout: 3s
       retries: 10

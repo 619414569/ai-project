@@ -1,4 +1,7 @@
-.PHONY: up down logs ps build backend-test frontend-build
+.PHONY: deploy up down logs ps build backend-test frontend-build
+
+deploy:
+	sh scripts/deploy.sh
 
 up:
 	docker compose up -d --build
@@ -19,4 +22,4 @@ backend-test:
 	cd backend && mvn test
 
 frontend-build:
-	cd frontend && npm install && npm run build
+	cd frontend && npm ci && npm run build

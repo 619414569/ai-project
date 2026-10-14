@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
 const notebookDirectory = path.resolve(scriptDirectory, '错题本')
+const acceptanceFile = path.resolve(scriptDirectory, '验收状态.md')
 const releaseCheck = process.argv.includes('--release')
 const requiredFields = ['id', 'date', 'severity', 'status', 'summary', 'regression']
 const allowedStatuses = new Set(['open', 'resolved'])
@@ -19,6 +20,46 @@ if (files.length === 0) {
 const seenIds = new Set()
 const errors = []
 let openCount = 0
+let acceptanceStatus = 'unknown'
+
+try {
+  const acceptanceContent = await readFile(acceptanceFile, 'utf8')
+  const acceptanceFrontMatter = acceptanceContent.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+  if (!acceptanceFrontMatter) {
+    errors.push('验收状态.md: 缺少 YAML 元数据')
+  } else {
+    const acceptanceMetadata = Object.fromEntries(
+      acceptanceFrontMatter[1]
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map((line) => {
+          const separator = line.indexOf(':')
+          return separator < 1
+            ? [line.trim(), '']
+            : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()]
+        }),
+    )
+
+    acceptanceStatus = acceptanceMetadata.status ?? 'unknown'
+    if (!new Set(['pending', 'accepted']).has(acceptanceStatus)) {
+      errors.push('验收状态.md: status 必须是 pending 或 accepted')
+    }
+    if (acceptanceMetadata.required_phrase !== '本次验收通过') {
+      errors.push('验收状态.md: required_phrase 必须是“本次验收通过”')
+    }
+    if (!acceptanceMetadata.scope) errors.push('验收状态.md: 缺少字段 scope')
+    if (acceptanceStatus === 'accepted') {
+      if (!acceptanceMetadata.confirmed_at || acceptanceMetadata.confirmed_at === 'pending') {
+        errors.push('验收状态.md: accepted 状态必须填写 confirmed_at')
+      }
+      if (!acceptanceMetadata.confirmed_by || acceptanceMetadata.confirmed_by === 'pending') {
+        errors.push('验收状态.md: accepted 状态必须填写 confirmed_by')
+      }
+    }
+  }
+} catch (error) {
+  errors.push(`验收状态.md: 无法读取（${error.message}）`)
+}
 
 for (const file of files) {
   const content = await readFile(path.join(notebookDirectory, file), 'utf8')
@@ -54,10 +95,13 @@ for (const file of files) {
 if (releaseCheck && openCount > 0) {
   errors.push(`发布检查失败：错题本仍有 ${openCount} 条 open 记录`)
 }
+if (releaseCheck && acceptanceStatus !== 'accepted') {
+  errors.push('发布检查失败：尚未收到用户单独输入“本次验收通过”')
+}
 
 if (errors.length > 0) {
   console.error(errors.join('\n'))
   process.exit(1)
 }
 
-console.log(`错题本校验通过：${files.length} 条记录，${openCount} 条待解决${releaseCheck ? '，发布门禁已通过' : ''}`)
+console.log(`错题本校验通过：${files.length} 条记录，${openCount} 条待解决，验收状态 ${acceptanceStatus}${releaseCheck ? '，发布门禁已通过' : ''}`)

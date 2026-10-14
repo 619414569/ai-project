@@ -18,12 +18,34 @@
 
 本地 Compose 使用 PostgreSQL 16 作为 PolarDB-PG 的兼容开发环境。生产环境直接替换 JDBC 地址即可。
 
-## 一键启动
+## Docker 一键部署
 
-前置条件：Docker Engine 24+ 与 Docker Compose v2。
+前置条件：Linux x86_64 服务器、Docker Engine 24+ 与 Docker Compose v2。Ubuntu、Debian、Rocky Linux、AlmaLinux 和 RHEL 等发行版均可使用；ARM64 服务器需先确认所有基础镜像都提供对应架构。
+
+服务器资源、端口、网络和上线检查见 [`docs/服务器部署准备清单.md`](docs/服务器部署准备清单.md)。
+
+部署目录没有硬编码，可使用 `/opt/ai-workbench`、`/srv/ai-workbench` 或普通用户有写权限的目录。目录名包含中文或空格也可以，但生产环境建议使用 ASCII 路径。部署账号必须对项目目录有写权限，以便生成权限为 `600` 的 `.env`。
+
+Linux 服务器首次部署直接执行：
 
 ```bash
-docker compose up -d --build
+sh scripts/deploy.sh
+```
+
+脚本会检查 Docker/Compose、首次自动创建 `.env` 和随机基础设施密钥、构建镜像、启动服务，并等待所有容器健康。演示用户初始密码为 `admin123`，首次登录后必须修改。
+
+如果 Redis 的宿主机 `6379` 端口已占用，只修改 `.env` 中的 `REDIS_HOST_PORT`；`REDIS_PORT` 是容器网络或外部 Redis 的实际服务端口，两者相互独立。
+
+rootless Docker 无法绑定低端口或宿主机 `80` 已占用时，可在首次部署时指定其他端口，脚本会将其持久写入 `.env`：
+
+```bash
+WEB_PORT=8088 sh scripts/deploy.sh
+```
+
+已有安全 `.env` 时，也可以直接执行：
+
+```bash
+docker compose up -d --build --remove-orphans
 ```
 
 首次构建需要下载镜像和 Maven/npm 依赖，完成后访问：
@@ -32,14 +54,14 @@ docker compose up -d --build
 - 后端健康检查：<http://localhost:8080/actuator/health>
 - OpenAPI 文档：<http://localhost:8080/swagger-ui.html>
 
-默认开发账号：
+`.env.example` 中的默认开发账号：
 
 ```text
 用户名：admin
 密码：admin123（首次登录后请立即修改）
 ```
 
-默认值仅用于本地启动。共享或生产环境必须先复制 `.env.example` 为 `.env`，并替换数据库、Redis、JWT 和管理员密码。
+脚本会拒绝数据库、Redis 和 JWT 使用模板默认值，但按当前产品要求保留演示用户初始密码 `admin123`，并由应用在首次登录后提示修改。正式开放给不受信任网络前，应完成初始密码修改；也可以提前准备 `.env` 自行指定管理员密码。
 
 常用命令：
 
@@ -76,7 +98,7 @@ mvn spring-boot:run
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -98,16 +120,16 @@ Windows 下从中文目录运行可执行 JAR 时必须保留 UTF-8 参数，避
 
 ```bash
 docker build -t ai-scaffold-backend:1.0.0 ./backend
-docker run --rm -p 8080:8080 --env-file .env ai-scaffold-backend:1.0.0
+docker run --rm --add-host=host.docker.internal:host-gateway -p 8080:8080 --env-file .env ai-scaffold-backend:1.0.0
 ```
 
-单独运行后端容器时，`.env` 中的 `DB_URL`、`REDIS_HOST` 和 `ROCKETMQ_NAME_SERVER` 应指向容器可访问的地址；示例使用 Docker Desktop 提供的 `host.docker.internal`。
+单独运行后端容器时，`.env` 中的 `DB_URL`、`REDIS_HOST` 和 `ROCKETMQ_NAME_SERVER` 应指向容器可访问的地址。Linux Docker 20.10+ 通过 `--add-host=host.docker.internal:host-gateway` 提供统一的宿主机入口；若中间件位于其他服务器，应直接填写其内网地址。
 
 前端静态包：
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run build
 ```
 
@@ -115,7 +137,7 @@ npm run build
 
 ```bash
 docker build -t ai-scaffold-frontend:1.0.0 ./frontend
-docker run --rm -p 80:80 -e BACKEND_URL=http://host.docker.internal:8080 ai-scaffold-frontend:1.0.0
+docker run --rm --add-host=host.docker.internal:host-gateway -p 80:80 -e BACKEND_URL=http://host.docker.internal:8080 ai-scaffold-frontend:1.0.0
 ```
 
 因此，前端和后端可以分别构建、打版本、部署和扩容；根目录 Compose 只是本地与集成环境的便捷编排。
