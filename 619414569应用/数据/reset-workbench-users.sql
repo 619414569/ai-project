@@ -38,9 +38,11 @@ SELECT
     TRUE
 FROM (VALUES
     ('dcy'),
+    ('qhh'),
     ('yf'),
     ('zls'),
-    ('xqx')
+    ('xqx'),
+    ('ytt')
 ) AS requested_user(username)
 CROSS JOIN retained_password_hash;
 
