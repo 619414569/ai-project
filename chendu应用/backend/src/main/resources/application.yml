@@ -1,0 +1,101 @@
+spring:
+  application:
+    name: ai-scaffold-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ai_scaffold}
+    username: ${DB_USERNAME:ai_scaffold}
+    password: ${DB_PASSWORD:change-me-postgres}
+    hikari:
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      connection-timeout: 30000
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:change-me-redis}
+      timeout: 3s
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-migration-naming: true
+    baseline-on-migrate: true
+    baseline-version: 0
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    version: 1.1.0
+
+flowable:
+  database-schema-update: true
+  async-executor-activate: false
+  check-process-definitions: true
+  idm:
+    enabled: false
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:localhost:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:ai-scaffold-producer}
+    send-message-timeout: 5000
+  consumer:
+    group: ${ROCKETMQ_CONSUMER_GROUP:ai-scaffold-consumer}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+app:
+  demo-data:
+    # 关闭后启动时不再向 workbench_user 表补充演示账号。
+    enabled: ${APP_DEMO_DATA_ENABLED:true}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost,http://localhost:5173,http://127.0.0.1,http://127.0.0.1:5173}
+    allowed-origin-patterns: '${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,http://192.168.*:*,http://10.*:*,http://172.1[6-9].*:*,http://172.2[0-9].*:*,http://172.3[01].*:*}'
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:ai-scaffold}
+      secret: ${JWT_SECRET:replace-this-development-secret-with-a-random-64-character-value}
+      access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT2H}
+    demo-user:
+      username: ${DEMO_ADMIN_USERNAME:admin}
+      password: ${DEMO_ADMIN_PASSWORD:Admin@123456}
+      roles: ${DEMO_ADMIN_ROLES:ADMIN,USER}
+    additional-demo-users:
+      - username: ${DEMO_DCY_USERNAME:dcy}
+        password: ${DEMO_DCY_PASSWORD:admin123}
+        roles: ${DEMO_DCY_ROLES:USER}
+  integration:
+    rocketmq:
+      enabled: ${ROCKETMQ_ENABLED:true}
+      demo-topic: ${ROCKETMQ_DEMO_TOPIC:ai-scaffold-demo}
+
+logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId:-none}]"
