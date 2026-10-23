@@ -11,8 +11,8 @@
 
 ## 发布规则
 
-1. 日常 CI 执行 `node 619414569应用/测试/check-error-notebook.mjs`，校验记录结构和编号。
-2. 发布 `v*` 标签时执行 `node 619414569应用/测试/check-error-notebook.mjs --release`。
+1. 日常 CI 执行 `node zls应用/测试/check-error-notebook.mjs`，校验记录结构和编号。
+2. 发布 `v*` 标签时执行 `node zls应用/测试/check-error-notebook.mjs --release`。
 3. 发布门禁要求所有条目均为 `resolved`，且关联回归测试全部通过。
 4. 发布负责人必须逐条核对本目录，不能只依赖脚本退出码。
 
