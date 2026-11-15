@@ -12,17 +12,29 @@
 | 迁移工具 | Flyway，脚本目录 `classpath:db/migration` |
 | 盘点时间 | 2026-10-19 |
 
-> 本轮所有查询均为只读 `SELECT` / 系统目录查询，未对数据库执行任何写操作。生产环境地址应按 `README.md`「PolarDB-PG 配置」一节通过 `DB_URL` 注入。
+同机部署（与 `619414569应用` 共用 PostgreSQL 实例）后的目标数据源：
+
+| 项 | 值 |
+| --- | --- |
+| 实例 | 复用 `619414569应用` 的 `postgres` 容器（共享网络 `ai-scaffold_ai-network` 内 `postgres:5432`） |
+| 连接地址 | `jdbc:postgresql://postgres:5432/ai_scaffold_chendu` |
+| 库与角色 | `ai_scaffold_chendu`，与 `619414569应用` 的 `ai_scaffold` 完全隔离 |
+| 建库脚本 | `数据/初始化/01_create_database_shared_instance.sql` |
+| 生效时间 | 2026-11-15 起；`.env` 的 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 必须同步 |
+
+> 上述共享实例建库属于写库操作，执行前须按规则第 6 节确认目标实例、库名、角色名、影响行数与回滚方案。本文件记录的盘点数据来自本机环境，均为只读 `SELECT` / 系统目录查询，未对数据库执行任何写操作。
 
 ## 建库脚本
 
 Flyway 需要先连接到一个已存在的库才能执行迁移，因此建库不放在迁移脚本内，单独提供：
 
-`数据/初始化/00_create_database.sql`
+| 脚本 | 用途 | 库名 / 角色 |
+| --- | --- | --- |
+| `数据/初始化/00_create_database.sql` | 本机开发实例建库，与 `619414569应用` 同库 | `ai_scaffold` |
+| `数据/初始化/01_create_database_shared_instance.sql` | 同机部署时在共享实例中建独立库 | `ai_scaffold_chendu` |
 
-该脚本先查询 `pg_roles` / `pg_database` 判断角色与库是否存在，再由 psql 的 `\gexec`
-执行生成的 `CREATE ROLE` / `CREATE DATABASE` 语句，因此可重复执行。库名与角色名均为
-`ai_scaffold`，与 `619414569应用` 的连接配置一致。
+两个脚本都先查询 `pg_roles` / `pg_database` 判断角色与库是否存在，再由 psql 的 `\gexec`
+执行生成的 `CREATE ROLE` / `CREATE DATABASE` 语句，因此可重复执行。
 
 建库后**必须先启动应用一次**：Flyway 建 `app_setting`、`workbench_user`，Flowable 建
 `act_*`、`flw_*` 共 38 张表。空库直接执行 `mvn -B test` 会因 `act_ge_property` 不存在而失败，
@@ -35,8 +47,15 @@ $env:PGPASSWORD = '<postgres 口令>'
 psql -U postgres -d postgres -f 数据/初始化/00_create_database.sql
 ```
 
+同机共享实例（在 `619414569应用` 目录执行，脚本通过标准输入进入其 `postgres` 容器）：
+
+```bash
+docker compose exec -T postgres psql -U ai_scaffold -d postgres \
+  -v db_password='<库口令>' -f - < ../chendu应用/数据/初始化/01_create_database_shared_instance.sql
+```
+
 角色口令通过 psql 变量注入，默认取与 `.env.example` 相同的本地占位值；非本机环境用
-`-v db_password='<口令>'` 覆盖。
+`-v db_password='<口令>'` 覆盖。该命令会写共享实例，执行前须按规则第 6 节取得确认。
 
 脚本内不含建表 DDL：表结构的唯一权威来源是
 `backend/src/main/resources/db/migration`，在本脚本重复定义会与迁移产生结构漂移（规则 7.1）。

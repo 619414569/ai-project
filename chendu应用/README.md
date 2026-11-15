@@ -16,21 +16,60 @@
 | 网关 | Nginx | 前端静态资源与 API 反向代理 |
 | 交付 | Docker、Docker Compose | 独立镜像与整套启动 |
 
-本地 Compose 使用 PostgreSQL 16 作为 PolarDB-PG 的兼容开发环境。生产环境直接替换 JDBC 地址即可。
+本地 Compose 不再启动 PostgreSQL / Redis / RocketMQ 容器，统一复用同机 `619414569应用` 的 compose 已启动的中间件；本应用只编排前端与后端服务。生产环境替换 JDBC 地址与共享实例地址即可。
 
-## 一键启动
+## 同机部署拓扑
 
-前置条件：Docker Engine 24+ 与 Docker Compose v2。
+本应用与 `619414569应用` 部署在同一台服务器，不启动 PostgreSQL、Redis、RocketMQ 容器：
+
+| 项 | 取值 |
+| --- | --- |
+| Compose 项目名 | `ai-scaffold-chendu`（与 `619414569应用` 的 `ai-scaffold` 隔离） |
+| 共享网络 | `ai-scaffold_ai-network`，由 `619414569应用` 的 compose 创建后外部引用 |
+| PostgreSQL | 共享实例内独立库 `ai_scaffold_chendu`、独立角色 `ai_scaffold_chendu` |
+| Redis | `redis:6379`，口令必须与 `619414569应用` 的 `REDIS_PASSWORD` 一致 |
+| RocketMQ | `rocketmq-namesrv:9876`，生产者/消费者组独立，避免争抢队列 |
+| 前端入口 | `0.0.0.0:81`（`619414569应用` 已占用 80） |
+| 后端端口 | `127.0.0.1:8081`，仅本机排查用，浏览器访问统一走前端 Nginx |
+
+## 启动步骤
+
+前置条件：Docker Engine 24+、Docker Compose v2，且同机 `619414569应用` 已按自身文档完成部署。
+
+以下步骤在仓库根目录执行。
+
+1. 确认共享中间件已运行：
 
 ```bash
-docker compose up -d --build
+cd 619414569应用
+docker compose up -d postgres redis rocketmq-namesrv rocketmq-broker
+docker network ls | grep ai-scaffold
 ```
+
+2. 首次部署时在共享实例中创建独立库（属于写库操作，执行前需按规则第 6 节取得确认）：
+
+```bash
+cd 619414569应用
+docker compose exec -T postgres psql -U ai_scaffold -d postgres \
+  -v db_password='<库口令>' -f - < ../chendu应用/数据/初始化/01_create_database_shared_instance.sql
+```
+
+3. 配置并启动本应用：
+
+```bash
+cd chendu应用
+cp .env.example .env
+# 修改 DB_PASSWORD（与上一步一致）、REDIS_PASSWORD（与 619414569应用 一致）、JWT_SECRET
+sh scripts/deploy.sh
+```
+
+`scripts/deploy.sh` 会校验共享网络是否存在、`.env` 是否仍含占位口令，然后构建并启动容器。首次启动由 Flyway 与 Flowable 建表，见 [数据说明](./数据/README.md)。
 
 首次构建需要下载镜像和 Maven/npm 依赖，完成后访问：
 
-- Web 控制台：<http://localhost>
-- 后端健康检查：<http://localhost:8080/actuator/health>
-- OpenAPI 文档：<http://localhost:8080/swagger-ui.html>
+- Web 控制台：<http://localhost:81>
+- 后端健康检查：<http://127.0.0.1:8081/actuator/health>
+- OpenAPI 文档：<http://127.0.0.1:8081/swagger-ui.html>
 
 默认开发账号：
 
@@ -39,33 +78,36 @@ docker compose up -d --build
 密码：Admin@123456
 ```
 
-默认值仅用于本地启动。共享或生产环境必须先复制 `.env.example` 为 `.env`，并替换数据库、Redis、JWT 和管理员密码。
+默认值仅用于本地启动。共享或生产环境必须先替换 `.env` 中的数据库、Redis、JWT 和管理员密码。
 
 常用命令：
 
 ```bash
 docker compose ps
 docker compose logs -f backend frontend
-docker compose down
-docker compose down -v  # 同时清理本地中间件数据，请谨慎使用
+docker compose config            # 校验变量与语法
+docker compose down              # 只停本应用，不影响 619414569应用 的中间件
 ```
+
+> 本应用已不再声明独立数据卷，不要用 `docker compose down -v` 清理；中间件数据卷属于 `619414569应用`。
 
 ## 独立开发
 
 ### 后端
 
-要求 Java 17、Maven 3.9。先启动基础设施，再运行应用：
+要求 Java 17、Maven 3.9。先启动同机共享中间件，再运行应用：
 
 ```bash
+cd 619414569应用
 docker compose up -d postgres redis rocketmq-namesrv rocketmq-broker
-cd backend
+cd ../chendu应用/backend
 mvn spring-boot:run
 ```
 
-后端默认读取以下本地地址：
+后端在宿主机直连时读取以下地址（中间件端口由 `619414569应用` 暴露到回环地址）：
 
-- PostgreSQL：`localhost:5432/ai_scaffold`
-- Redis：`localhost:6379`
+- PostgreSQL：`localhost:5432/ai_scaffold_chendu`
+- Redis：`localhost:6379`，口令与 `619414569应用` 一致
 - RocketMQ NameServer：`localhost:9876`
 
 如果暂时不需要 RocketMQ，可设置 `ROCKETMQ_ENABLED=false`，后端仍可启动，消息示例接口会返回服务不可用。
@@ -80,7 +122,7 @@ npm install
 npm run dev
 ```
 
-开发服务器地址为 <http://localhost:5173>，`/api` 默认代理到 `http://localhost:8080`。可通过 `VITE_PROXY_TARGET` 修改代理目标。
+开发服务器地址为 <http://localhost:5173>，`/api` 默认代理到 `http://localhost:8081`。可通过 `VITE_PROXY_TARGET` 修改代理目标。
 
 ## 独立打包与发布
 
@@ -95,11 +137,11 @@ java -jar target/ai-scaffold-backend.jar
 后端镜像：
 
 ```bash
-docker build -t ai-scaffold-backend:1.1.0 ./backend
-docker run --rm -p 8080:8080 --env-file .env ai-scaffold-backend:1.1.0
+docker build -t ai-scaffold-chendu-backend:1.1.0 ./backend
+docker run --rm -p 127.0.0.1:8081:8080 --env-file .env ai-scaffold-chendu-backend:1.1.0
 ```
 
-单独运行后端容器时，`.env` 中的 `DB_URL`、`REDIS_HOST` 和 `ROCKETMQ_NAME_SERVER` 应指向容器可访问的地址；示例使用 Docker Desktop 提供的 `host.docker.internal`。
+单独运行后端容器时，`.env` 中的 `DB_URL`、`REDIS_HOST` 和 `ROCKETMQ_NAME_SERVER` 应指向容器可访问的地址（Compose 内的 `postgres`、`redis`、`rocketmq-namesrv` 服务名只在共享网络中有效）；示例使用 Docker Desktop 提供的 `host.docker.internal`。
 
 前端静态包：
 
@@ -112,8 +154,8 @@ npm run build
 前端镜像内置 Nginx，运行时用 `BACKEND_URL` 指定后端：
 
 ```bash
-docker build -t ai-scaffold-frontend:1.0.0 ./frontend
-docker run --rm -p 80:80 -e BACKEND_URL=http://host.docker.internal:8080 ai-scaffold-frontend:1.0.0
+docker build -t ai-scaffold-chendu-frontend:1.0.0 ./frontend
+docker run --rm -p 81:80 -e BACKEND_URL=http://host.docker.internal:8081 ai-scaffold-chendu-frontend:1.0.0
 ```
 
 因此，前端和后端可以分别构建、打版本、部署和扩容；根目录 Compose 只是本地与集成环境的便捷编排。
@@ -123,8 +165,8 @@ docker run --rm -p 80:80 -e BACKEND_URL=http://host.docker.internal:8080 ai-scaf
 PolarDB-PG 兼容 PostgreSQL 协议，后端统一使用 PostgreSQL JDBC 驱动。生产连接示例：
 
 ```text
-DB_URL=jdbc:postgresql://your-polardb-endpoint:5432/ai_scaffold?sslmode=require&ApplicationName=ai-scaffold
-DB_USERNAME=application_user
+DB_URL=jdbc:postgresql://your-polardb-endpoint:5432/ai_scaffold_chendu?sslmode=require&ApplicationName=ai-scaffold-chendu
+DB_USERNAME=ai_scaffold_chendu
 DB_PASSWORD=replace-with-secret
 ```
 
@@ -179,7 +221,8 @@ DB_PASSWORD=replace-with-secret
 │   ├── nginx/
 │   ├── Dockerfile
 │   └── package.json
-├── docker/rocketmq/          # RocketMQ Broker 配置
+├── docker/rocketmq/          # 本地独立 Broker 配置（同机复用中间件时不再挂载）
+├── scripts/deploy.sh         # 同机部署前置校验与启动脚本
 ├── 测试/                      # 测试记录与错题本
 │   ├── 测试记录/
 │   └── 错题本/
@@ -197,12 +240,12 @@ DB_PASSWORD=replace-with-secret
 
 - [测试资料](./测试/README.md)：测试记录、验收状态与错题本
 - [数据说明](./数据/README.md)：数据对象、初始化数据与迁移约定
-- [提交日志](./提交日志/2026-10-19_V1.1.md)：最新版本的变更记录
+- [提交日志](./提交日志/2026-11-15_V1.2.md)：最新版本的变更记录
 
 ## 上线前检查
 
 1. 替换所有默认密码与 `JWT_SECRET`。
-2. 将数据库、Redis、RocketMQ 地址改为受管环境地址，并限制网络访问。
+2. 复用同机中间件时，只通过 `ai-scaffold_ai-network` 内网访问 PostgreSQL、Redis、RocketMQ，不额外暴露中间件端口；`DB_URL` 指向独立库 `ai_scaffold_chendu`，`REDIS_PASSWORD` 与共享实例一致。
 3. 将演示用户替换为正式账号与权限数据源。
 4. 按环境设置 CORS 白名单和 HTTPS 终止层。
 5. 关闭 RocketMQ 自动创建 Topic，在平台侧显式创建并配置权限。

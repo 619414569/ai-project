@@ -1,4 +1,4 @@
-.PHONY: up down logs ps build backend-test frontend-build
+.PHONY: up down logs ps build config backend-test frontend-build
 
 up:
 	docker compose up -d --build
@@ -14,6 +14,9 @@ ps:
 
 build:
 	docker compose build
+
+config:
+	docker compose config
 
 backend-test:
 	cd backend && mvn test
