@@ -5,6 +5,7 @@
 - [验收状态](./验收状态.md)
 - [错题本](./错题本/README.md)
 - 测试记录：
+  - [2026-11-15 移除 Spring Security、Redis、PostgreSQL 测试记录](./测试记录/2026-11-15_移除安全与中间件依赖测试记录.md)
   - [2026-11-15 同机部署 Compose 改造测试记录](./测试记录/2026-11-15_同机部署Compose改造测试记录.md)
   - [2026-10-19 数据库名统一为 ai_scaffold 验证记录](./测试记录/2026-10-19_数据库名统一为ai_scaffold验证记录.md)
   - [2026-10-19 数据库账号认证改造测试记录](./测试记录/2026-10-19_数据库账号认证改造测试记录.md)
@@ -22,7 +23,7 @@ mvn -B clean package
 
 > 注意：后端进程运行期间会占用 `target/ai-scaffold-backend.jar`，`mvn clean` 会失败。构建前需先停止后端进程，构建完成后重启。
 
-> 注意：登录已改为数据库校验，集成测试（`AuthIntegrationTest`、`DatabaseUserDetailsServiceTest`）会执行 Flyway 迁移并读写 `workbench_user` 表，需要本机 PostgreSQL 可连通。
+> 注意：V2.0 起已无数据库与登录，测试仅保留 `IdUtilsTest`、`MaskUtilsTest` 两个纯单元测试，不需要任何中间件即可执行。历史上的 `AuthIntegrationTest`、`DatabaseUserDetailsServiceTest` 已随鉴权模块删除。
 
 前端类型检查与生产构建，从 `chendu应用/frontend` 目录执行：
 
@@ -35,6 +36,7 @@ npm run build       # vue-tsc --noEmit && vite build
 
 | 日期 | 记录 | 覆盖范围 | 结果 |
 | --- | --- | --- | --- |
+| 2026-11-15 | [移除 Spring Security、Redis、PostgreSQL 测试记录](./测试记录/2026-11-15_移除安全与中间件依赖测试记录.md) | V2.0 依赖裁剪、无数据库启动、健康检查、变量一致性 | 构建 `BUILD SUCCESS`；单元测试 2/2 通过；无数据库启动与接口验证通过；前端构建、容器、RocketMQ 未执行 |
 | 2026-11-15 | [同机部署 Compose 改造测试记录](./测试记录/2026-11-15_同机部署Compose改造测试记录.md) | 复用 `619414569应用` 中间件、外部网络、独立库、端口与变量校验、部署脚本 | 静态校验 7 项通过；`docker compose config`、容器启动、共享实例建库未执行（本机无 Docker，建库属写库操作） |
 | 2026-10-19 | [数据库名统一为 ai_scaffold 验证记录](./测试记录/2026-10-19_数据库名统一为ai_scaffold验证记录.md) | 本机建角色与库 `ai_scaffold`、建库脚本、表与账号落库、登录回归 | 自动化测试 21/21 通过；11 项检查全部符合期望（Compose 启动因 Docker 不可用未执行） |
 | 2026-10-19 | [数据库账号认证改造测试记录](./测试记录/2026-10-19_数据库账号认证改造测试记录.md) | 登录改为 `workbench_user` 表校验、演示账号播种、跨域边界 | 自动化测试 21/21 通过；端到端 12/12 组合符合期望 |

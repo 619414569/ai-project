@@ -1,53 +1,36 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { DataBoard, Link, SwitchButton } from '@element-plus/icons-vue'
-import { useAuthStore } from '@/stores/auth'
+import { useRoute } from 'vue-router'
+import { DataBoard, Notebook } from '@element-plus/icons-vue'
 
 const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
 const activePath = computed(() => route.path)
-
-function logout() {
-  authStore.logout()
-  void router.replace('/login')
-}
 </script>
 
 <template>
   <div class="app-shell">
     <aside class="app-sidebar">
       <div class="brand-block">
-        <span class="brand-mark">AI</span>
+        <span class="brand-mark">N</span>
         <div>
-          <strong>AI Project</strong>
-          <small>通用研发底座</small>
+          <strong>Notebook</strong>
+          <small>内存存储示例</small>
         </div>
       </div>
 
       <el-menu :default-active="activePath" router class="app-menu">
         <el-menu-item index="/">
+          <el-icon><Notebook /></el-icon>
+          <span>手账</span>
+        </el-menu-item>
+        <el-menu-item index="/status">
           <el-icon><DataBoard /></el-icon>
           <span>运行概览</span>
-        </el-menu-item>
-        <el-menu-item index="/integrations">
-          <el-icon><Link /></el-icon>
-          <span>组件联调</span>
         </el-menu-item>
       </el-menu>
 
       <div class="sidebar-footer">
-        <div class="user-summary">
-          <span class="user-avatar">{{ authStore.profile?.username.slice(0, 1).toUpperCase() }}</span>
-          <div>
-            <strong>{{ authStore.profile?.username }}</strong>
-            <small>{{ authStore.profile?.roles.join(' / ') }}</small>
-          </div>
-        </div>
-        <el-tooltip content="退出登录" placement="top">
-          <el-button :icon="SwitchButton" circle text aria-label="退出登录" @click="logout" />
-        </el-tooltip>
+        <el-tag type="info" effect="plain" round>无需登录</el-tag>
       </div>
     </aside>
 

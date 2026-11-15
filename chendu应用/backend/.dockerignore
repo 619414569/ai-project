@@ -1,4 +1,6 @@
-target
+# 只把打包好的 jar 送进构建上下文，其余构建产物、IDE 文件与日志都排除
+target/*
+!target/ai-scaffold-backend.jar
 .idea
 *.iml
 *.log

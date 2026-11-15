@@ -9,11 +9,8 @@ const loading = ref(false)
 const ping = ref<PingResponse | null>(null)
 
 const capabilities = [
-  { name: 'Spring Security', detail: 'JWT / RBAC', state: '就绪' },
-  { name: 'PolarDB-PG', detail: 'PostgreSQL 协议 + Flyway', state: '已配置' },
-  { name: 'Redis', detail: 'StringRedisTemplate', state: '已配置' },
-  { name: 'RocketMQ', detail: '生产者 + 消费者示例', state: '已配置' },
-  { name: 'Flowable', detail: '审批流程示例', state: '已配置' },
+  { name: 'Spring Boot Actuator', detail: '健康检查端点', state: '已启用' },
+  { name: 'OpenAPI', detail: 'Swagger UI 在线调试', state: '已启用' },
   { name: 'Nginx', detail: 'SPA 托管 + API 代理', state: '已配置' },
 ]
 
@@ -64,7 +61,7 @@ onMounted(refresh)
 
     <section class="delivery-strip">
       <div>
-        <span class="metric">3</span>
+        <span class="metric">2</span>
         <span>独立交付单元</span>
       </div>
       <div>
@@ -72,8 +69,8 @@ onMounted(refresh)
         <span>命令整套启动</span>
       </div>
       <div>
-        <span class="metric">100%</span>
-        <span>环境变量配置</span>
+        <span class="metric">0</span>
+        <span>外部中间件依赖</span>
       </div>
     </section>
   </div>

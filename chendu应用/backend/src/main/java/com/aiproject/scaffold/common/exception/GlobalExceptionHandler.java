@@ -5,10 +5,8 @@ import com.aiproject.scaffold.common.api.ErrorCode;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -56,19 +54,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleUnreadableMessage() {
         return ResponseEntity.badRequest()
                 .body(ApiResponse.failure(ErrorCode.VALIDATION_ERROR, "Request body is missing or malformed"));
-    }
-
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthentication(AuthenticationException exception) {
-        return ResponseEntity.status(ErrorCode.UNAUTHORIZED.status())
-                .body(ApiResponse.failure(ErrorCode.UNAUTHORIZED, "Username or password is incorrect"));
-    }
-
-    @ExceptionHandler(DataAccessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDataAccess(DataAccessException exception) {
-        log.error("Data service request failed", exception);
-        return ResponseEntity.status(ErrorCode.SERVICE_UNAVAILABLE.status())
-                .body(ApiResponse.failure(ErrorCode.SERVICE_UNAVAILABLE, "Data service is unavailable"));
     }
 
     @ExceptionHandler(Exception.class)
